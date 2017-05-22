@@ -1,8 +1,36 @@
-module Plaid
-    ()
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE OverloadedStrings     #-}
+module Money.Plaid
+    ( Creds(..)
+    , PlaidAccount(..)
+    , PlaidAccountMeta(..)
+    , PlaidBalance(..)
+    , PlaidTransaction(..)
+    , PlaidTransactionMeta(..)
+    , PlaidTransactionScore(..)
+    , PlaidTransactionType(..)
+    , PlaidResponse(..)
+    , plaidGet
+    )
     where
 
 import           Data.Aeson ((.=), (.:), (.:?), (.!=), FromJSON(..), ToJSON(..), Value(..), object)
+import           Data.Proxy (Proxy(..))
+import           Data.Text (Text)
+
+import           GHC.Generics (Generic)
+
+import           Network.HTTP.Client (newManager)
+import           Network.HTTP.Client.TLS (tlsManagerSettings)
+
+import           Servant.API ((:>), ReqBody, Post, JSON, FormUrlEncoded)
+import           Servant.Client (BaseUrl(..), ClientEnv(..), ClientM, Scheme(Https), ServantError, client, runClientM)
+
+import           Web.FormUrlEncoded (ToForm(..))
 
 -- Plaid Credentials
 data Creds =

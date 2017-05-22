@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Money
+  exposed-modules:     Money, Money.Prediction, Money.Lens, Money.FilterSort, Money.DB
   build-depends:       base >= 4.7 && < 5
                      , servant-client
                      , servant
