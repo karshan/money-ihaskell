@@ -181,9 +181,9 @@ mergeNewResponses resps DB{..} =
                     (Map.insert (txn_id t) (Txn t Set.empty Nothing Nothing 0) curDb)
                     (\existingTxn ->
                         bool
-                            (error $ "txn mismatch: " ++ show existingTxn ++ " /= " ++ show t)
+                            (error $ "txn amount mismatch: " ++ show existingTxn ++ " /= " ++ show t)
                             curDb
-                            (plaidTxn existingTxn == t))
+                            (amount (plaidTxn existingTxn) == amount t))
                     (Map.lookup (txn_id t) curDb))
             txnDB
             (concatMap transactions resps))
