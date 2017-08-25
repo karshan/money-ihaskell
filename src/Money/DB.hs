@@ -215,7 +215,7 @@ plAccToAcc txnDb pa@PlaidAccount{..} =
         []
     where
         latestTxn :: AccId -> TxnDB -> Maybe Txn
-        latestTxn accId = head . sortDesc . filter ((== accId) . accountId) . map snd . Map.toList
+        latestTxn accId = head . sortBy sortDesc . filter ((== accId) . accountId) . map snd . Map.toList
 
 plTxnToTxn :: PlaidTransaction -> Maybe Txn
 plTxnToTxn pt@PlaidTransaction{..} = do

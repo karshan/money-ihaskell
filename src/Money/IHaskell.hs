@@ -3,6 +3,7 @@
 module Money.IHaskell where
 
 import           Numeric (showFFloat)
+import           Data.List (sortBy)
 import qualified Data.Map as Map
 import qualified Data.Text as T
 import           Data.String (fromString)
@@ -16,16 +17,16 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Money.Lens
 import Money.DB.Types
 import Money.Balance
-import Money.FilterSort (FilterFunc)
+import Money.FilterSort (FilterFunc, SortFunc)
 
 show2decimal :: Double -> String
 show2decimal x = showFFloat (Just 2) x ""
 
 -- rendering to html
-renderTs :: Int -> DB -> FilterFunc -> Html
-renderTs maxN db ff =
+renderTs :: Int -> DB -> FilterFunc -> SortFunc -> Html
+renderTs maxN db ff sf =
     let balanceMap = calculateTxnBalances db
-        ts = filter ff (txns db)
+        ts = sortBy sf $ filter ff (txns db)
     in
         H.div ! A.id "container" ! A.style "font-family: \"Inconsolata\", monospace;" $ do
             H.div $ toHtml (show (length ts) ++ " transactions " ++ show2decimal (sum $ map amount' ts))

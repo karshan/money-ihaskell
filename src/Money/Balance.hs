@@ -19,7 +19,7 @@ calculateTxnBalances db =
     mergeMaps $
         map
             (\(accId, acc) ->
-                let sortedTxns = sortDesc $ filter ((== accId) . accountId) $ txns db
+                let sortedTxns = sortBy sortDesc $ filter ((== accId) . accountId) $ txns db
                     initBal = balance acc
                     txnsAfterBal = takeWhile (/= balTxn initBal) sortedTxns
                     txnsBeforeBal = dropWhile (/= balTxn initBal) sortedTxns

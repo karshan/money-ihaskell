@@ -3,7 +3,6 @@ module Money.FilterSort
 
 import           Data.Function (on)
 import           Data.Monoid ((<>))
-import           Data.List (sortBy)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as T (unpack)
@@ -28,7 +27,7 @@ fOr f1 f2 x = f1 x || f2 x
 
 -- fitering and sorting
 type FilterFunc = Txn -> Bool
-type SortFunc = [Txn] -> [Txn]
+type SortFunc = (Txn -> Txn -> Ordering)
 
 fAccount :: DB -> Text -> FilterFunc
 fAccount db givenAcc = (Just givenAcc ==) . flip accNumber' db . accountId
@@ -51,10 +50,8 @@ fDesc reg = match (makeRegexOpts (defaultCompOpt .|. compIgnoreCase) defaultExec
 fTag :: Tag -> FilterFunc
 fTag tag = Set.member tag . tags
 
-sortDesc :: [Txn] -> [Txn]
-sortDesc = sortBy (\a b -> (flip compare `on` date) a b <> (flip compare `on` txnId) a b)
+sortDesc :: SortFunc
+sortDesc = (\a b -> (flip compare `on` date) a b <> (flip compare `on` txnId) a b)
 
-sortAsc :: [Txn] -> [Txn]
-sortAsc = sortBy (\a b -> (compare `on` date) a b <> (compare `on` txnId) a b)
-
-
+sortAsc :: SortFunc
+sortAsc = (\a b -> (compare `on` date) a b <> (compare `on` txnId) a b)

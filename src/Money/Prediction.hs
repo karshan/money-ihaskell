@@ -8,6 +8,7 @@ import           Crypto.Hash (Digest, SHA256, hash)
 
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as B64Url
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import           Data.Time.Calendar (addGregorianMonthsClip, toGregorian, fromGregorian)
@@ -71,7 +72,7 @@ calculateCCBill CCInfo{..} (year, month) db =
                 ""
                 Nothing
             , Txn
-                (toS paymentTransactionName)
+                (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap accNumber (Map.lookup ccAccId (accDB db))))
                 (fromGregorian year month billDueDay)
                 Nothing
                 (sum $ map amount $ filter ff (txns db))
@@ -89,7 +90,7 @@ predictedCCBills db =
         (\ccInfo@CCInfo{..} ->
             let
                 mLastPaymentDate =
-                    fmap date $ head $ sortDesc $
+                    fmap date $ head $ sortBy sortDesc $
                         filter (((== ccAccId) . accountId) ^& fDesc paymentTransactionName) $ txns db
             in
                 maybe
