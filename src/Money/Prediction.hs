@@ -4,9 +4,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Money.Prediction where
 
-import           Crypto.Hash (Digest, SHA256, hash)
-
-import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as B64Url
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -16,6 +13,8 @@ import           Data.Time.Calendar (addGregorianMonthsClip, toGregorian, fromGr
 import           Money.DB.Types
 import           Money.FilterSort
 import           Money.Lens
+
+import           Util (sha256)
 
 import           Protolude
 import           Prelude (String)
@@ -33,9 +32,6 @@ data CCInfo =
       , payFromAccId :: AccId
       , paymentTransactionName :: String
     } deriving (Show)
-
-sha256 :: (StringConv a ByteString, StringConv ByteString b) => a -> b
-sha256 x = toS $ (BA.convert :: Digest SHA256 -> ByteString) $ ((hash :: ByteString -> Digest SHA256) (toS x))
 
 mkTxnId :: Txn -> Txn
 mkTxnId x = x { txnId = (T.take 37 (toS (B64Url.encode (sha256 (show x :: String))))) <> "-p" }
