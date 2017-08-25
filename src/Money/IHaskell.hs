@@ -55,7 +55,7 @@ renderT db t@Txn{..} mBal =
             H.td (toHtml desc)
         H.td (toHtml $ amount' t)
         H.td (toHtml $ show . Set.toList $ tags)
-        H.td (toHtml $ show $ fmap (show2decimal . (\x -> (fromIntegral x/100 :: Double))) mBal)
-        H.td (toHtml $ show $ accNumber' accountId db)
+        H.td (toHtml $ maybe "_" id $ fmap (show2decimal . (\x -> (fromIntegral x/100 :: Double))) mBal)
+        H.td (toHtml $ maybe "_" id $ accNumber' accountId db)
 
 
