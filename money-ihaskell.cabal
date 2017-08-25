@@ -26,16 +26,19 @@ library
                      , Util
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , base64-bytestring
                      , blaze-html
                      , bytestring
                      , case-insensitive
                      , cereal
                      , containers
+                     , cryptonite
                      , directory
                      , http-api-data
                      , http-client
                      , http-client-tls
                      , lens
+                     , memory
                      , protolude
                      , regex-posix
                      , safecopy

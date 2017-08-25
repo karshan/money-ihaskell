@@ -16,14 +16,19 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Money.Lens
 import Money.DB.Types
 import Money.Balance
+import Money.FilterSort (FilterFunc)
+
+show2decimal :: Double -> String
+show2decimal x = showFFloat (Just 2) x ""
 
 -- rendering to html
-renderTs :: Int -> DB -> [Txn] -> Html
-renderTs maxN db ts =
+renderTs :: Int -> DB -> FilterFunc -> Html
+renderTs maxN db ff =
     let balanceMap = calculateTxnBalances db
+        ts = filter ff (txns db)
     in
         H.div ! A.id "container" ! A.style "font-family: \"Inconsolata\", monospace;" $ do
-            H.div $ toHtml (show (length ts) ++ " transactions " ++ showFFloat (Just 2) (sum $ map amount' ts) "")
+            H.div $ toHtml (show (length ts) ++ " transactions " ++ show2decimal (sum $ map amount' ts))
             H.table $ do
                 H.th "Id"
                 H.th "Date"
@@ -49,7 +54,7 @@ renderT db t@Txn{..} mBal =
             H.td (toHtml desc)
         H.td (toHtml $ amount' t)
         H.td (toHtml $ show . Set.toList $ tags)
-        H.td (toHtml $ show $ fmap (\x -> (fromIntegral x/100 :: Double)) mBal)
+        H.td (toHtml $ show $ fmap (show2decimal . (\x -> (fromIntegral x/100 :: Double))) mBal)
         H.td (toHtml $ show $ accNumber' accountId db)
 
 

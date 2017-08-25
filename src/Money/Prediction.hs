@@ -1,10 +1,16 @@
 {-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 module Money.Prediction where
 
-import qualified Data.Text as T (pack)
-import           Data.Time.Calendar (Day, addGregorianMonthsClip, toGregorian, fromGregorian)
+import           Crypto.Hash (Digest, SHA256, hash)
+
+import qualified Data.ByteArray as BA
+import qualified Data.ByteString.Base64.URL as B64Url
+import qualified Data.Set as Set
+import qualified Data.Text as T
+import           Data.Time.Calendar (addGregorianMonthsClip, toGregorian, fromGregorian)
 
 import           Money.DB.Types
 import           Money.FilterSort
@@ -22,17 +28,16 @@ data CCInfo =
         cycleStartDay :: DayOfMonth
       , cycleEndDay :: DayOfMonth
       , billDueDay :: DayOfMonth
-      , accountNumber :: Text
+      , ccAccId :: AccId
+      , payFromAccId :: AccId
       , paymentTransactionName :: String
     } deriving (Show)
 
-data PredictedTxn =
-    PredictedTxn {
-        prdAmount :: Double
-      , prdName :: Text
-      , prdDate :: Day
-      , prdAcc :: Text
-    } deriving (Show)
+sha256 :: (StringConv a ByteString, StringConv ByteString b) => a -> b
+sha256 x = toS $ (BA.convert :: Digest SHA256 -> ByteString) $ ((hash :: ByteString -> Digest SHA256) (toS x))
+
+mkTxnId :: Txn -> Txn
+mkTxnId x = x { txnId = (T.take 37 (toS (B64Url.encode (sha256 (show x :: String))))) <> "-p" }
 
 {-
     The credit card bill that is due in April will include expense transactions
@@ -41,7 +46,7 @@ data PredictedTxn =
     immediately. Furthermore, we don't want to include past credit card bill
     payments in the calculation of the bill.
 -}
-calculateCCBill :: CCInfo -> (Year, Month) -> DB -> PredictedTxn
+calculateCCBill :: CCInfo -> (Year, Month) -> DB -> [Txn]
 calculateCCBill CCInfo{..} (year, month) db =
     let subtractMonths m = addGregorianMonthsClip (-m)
 
@@ -51,33 +56,53 @@ calculateCCBill CCInfo{..} (year, month) db =
 
         expenses = fDate ((>= billStart) ^& (<= billEnd)) ^& fAmount (> 0)
         refunds  = fDate ((>= subtractMonths 1 billDue) ^& (< billDue)) ^& fAmount (< 0)
-        ff = fAccount db accountNumber ^& (not . fDesc paymentTransactionName) 
+        ff = ((== ccAccId) . accountId) ^& (not . fDesc paymentTransactionName) 
                                        ^& (expenses ^| refunds)
     in
-        PredictedTxn 
-            (sum $ map amount' $ filter ff (txns db))
-            (T.pack paymentTransactionName)
-            (fromGregorian year month billDueDay)
-            accountNumber
+        map mkTxnId
+            [ Txn 
+                (toS paymentTransactionName)
+                (fromGregorian year month billDueDay)
+                Nothing
+                (negate $ sum $ map amount $ filter ff (txns db))
+                Set.empty
+                Nothing
+                ccAccId
+                ""
+                Nothing
+            , Txn
+                (toS paymentTransactionName)
+                (fromGregorian year month billDueDay)
+                Nothing
+                (sum $ map amount $ filter ff (txns db))
+                Set.empty
+                Nothing
+                payFromAccId
+                ""
+                Nothing
+            ]
 
-predictedCCBills :: DB -> [CCInfo] -> [PredictedTxn]
+
+predictedCCBills :: DB -> [CCInfo] -> [Txn]
 predictedCCBills db =
     concatMap
         (\ccInfo@CCInfo{..} ->
             let
                 mLastPaymentDate =
                     fmap date $ head $ sortDesc $
-                        filter (fAccount db accountNumber ^& fDesc paymentTransactionName) $ txns db
+                        filter (((== ccAccId) . accountId) ^& fDesc paymentTransactionName) $ txns db
             in
                 maybe
                     []
                     (\lastPaymentDate ->
                         if billDueDay <= ((\(_, _, d) -> d) $ toGregorian lastPaymentDate) then -- already payed bill this month
-                            [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
-                            , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) db
-                            ]
+                            concat 
+                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
+                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) db
+                                ]
                         else
-                            [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian lastPaymentDate) db
-                            , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
-                            ])
+                            concat
+                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian lastPaymentDate) db
+                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
+                                ])
                     mLastPaymentDate)
