@@ -7,9 +7,7 @@ import Data.List (tails)
 import Data.Function (on)
 import Data.Time.Calendar (diffDays, toGregorian)
 
-import Money.Plaid
 import Money.DB.Types
-import Money.Lens
 
 -- Recurring transaction detection
 fuzzyMatch :: Text -> Text -> Double
@@ -50,8 +48,6 @@ recurringScore ts t1 =
         avg xs = if length xs == 0 then 0 else sum xs/fromIntegral (length xs)
         nmCut = 0.7
         amtCut = 0.9
-        dtCut = 0.8
         nameAmtMatches = filter (\t -> nameMatch t t1 > nmCut && amountMatch t t1 > amtCut && t /= t1) ts
-        --nadMatches = filter (\t -> nameMatch t t1 > nmCut && amountMatch t t1 > amtCut && dateMatch t t1 > dtCut && t /= t1) ts
 
 

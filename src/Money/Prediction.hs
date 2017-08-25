@@ -3,15 +3,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Money.Prediction where
 
-import           Data.Text (Text)
 import qualified Data.Text as T (pack)
-import           Data.Time.Calendar (Day, addDays, addGregorianMonthsClip, diffDays, toGregorian, fromGregorian)
-import           Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
+import           Data.Time.Calendar (Day, addGregorianMonthsClip, toGregorian, fromGregorian)
 
 import           Money.DB.Types
 import           Money.FilterSort
 import           Money.Lens
-import           Money.Plaid
 
 import           Protolude
 import           Prelude (String)
@@ -75,12 +72,12 @@ predictedCCBills db =
                 maybe
                     []
                     (\lastPaymentDate ->
-                        if billDueDay <= ((\(y, m, d) -> d) $ toGregorian lastPaymentDate) then -- already payed bill this month
-                            [ calculateCCBill ccInfo ((\(y, m, d) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
-                            , calculateCCBill ccInfo ((\(y, m, d) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) db
+                        if billDueDay <= ((\(_, _, d) -> d) $ toGregorian lastPaymentDate) then -- already payed bill this month
+                            [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
+                            , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) db
                             ]
                         else
-                            [ calculateCCBill ccInfo ((\(y, m, d) -> (y, m)) $ toGregorian lastPaymentDate) db
-                            , calculateCCBill ccInfo ((\(y, m, d) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
+                            [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian lastPaymentDate) db
+                            , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
                             ])
                     mLastPaymentDate)

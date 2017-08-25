@@ -15,7 +15,6 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import Money.Lens
 import Money.DB.Types
-import Money.Plaid
 import Money.Balance
 
 -- rendering to html
@@ -50,7 +49,7 @@ renderT db t@Txn{..} mBal =
             H.td (toHtml desc)
         H.td (toHtml $ amount' t)
         H.td (toHtml $ show . Set.toList $ tags)
-        H.td (toHtml $ show $ fmap (\x -> (fromIntegral x/100)) mBal)
+        H.td (toHtml $ show $ fmap (\x -> (fromIntegral x/100 :: Double)) mBal)
         H.td (toHtml $ show $ accNumber' accountId db)
 
 

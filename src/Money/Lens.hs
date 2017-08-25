@@ -3,12 +3,10 @@ module Money.Lens
     where
 
 import           Data.Time (Day, UTCTime (..))
-import           Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
+import           Data.Time.Format (defaultTimeLocale, parseTimeM)
 import           Data.Text (Text)
 import qualified Data.Text as T (unpack)
-import           Data.Map (Map)
 import qualified Data.Map as Map
-import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>))
 
 import           Money.Plaid

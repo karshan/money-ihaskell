@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 module Money.DB
     where
 
@@ -12,33 +13,28 @@ import qualified Data.Aeson as Aeson
 import           Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
 import qualified Data.ByteString as BS
-import           Data.List (foldl', groupBy, nub, sortBy, tails)
-import           Data.Map (Map)
 import qualified Data.Map as Map
-import           Data.Maybe (fromMaybe)
 import           Data.Time.Calendar (fromGregorian)
 import           Data.SafeCopy (SafeCopy(..), Migrate(..), base, contain, deriveSafeCopySimple, extension, safeGet, safePut)
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Serialize.Get (runGet)
 import           Data.Serialize.Put (runPut)
-import           Data.Text (Text)
 import qualified Data.Text as T
 
 import           Money.Plaid
-import           Money.FilterSort (sortDesc, sortDesc_v1)
+import           Money.FilterSort (sortDesc)
 import           Money.DB.Types
 import           Money.Lens
 
 import           Prelude (FilePath, String)
-import           Protolude hiding (maybeToEither)
+import           Protolude hiding (maybeToEither, link)
 import           Util (maybeToEither)
 
 emptyDB :: DB
 emptyDB = DB Map.empty Map.empty
 
 mkAccDB :: [Account] -> AccDB
-mkAccDB = Map.fromList . map (\acc -> (_id acc, acc))
+mkAccDB = Map.fromList . map (\a -> (_id a, a))
 
 instance (CI.FoldCase s, SafeCopy s) => SafeCopy (CI s) where
     putCopy ci = contain $ safePut (CI.foldedCase ci)
