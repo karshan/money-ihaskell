@@ -9,7 +9,7 @@ import Money.Lens
 import Money.Plaid
 import Money.FilterSort
 
-showTxn t = (date $ plaidTxn t, txn_name $ plaidTxn t, amount $ plaidTxn t)
+showTxn t@Txn{..} = (date, desc, amount' t)
 
 bofaInfo     = CCInfo 20 19 14 "0881" "PAYMENT - THANK YOU"
 amazonInfo   = CCInfo 07 06 03 "4231" "AUTOMATIC PAYMENT - THANK"

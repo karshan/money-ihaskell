@@ -73,5 +73,6 @@ updateDBFromPlaid :: IORef DB -> IO ()
 updateDBFromPlaid dbIORef = do
     db <- readIORef dbIORef
     plaidResps <- makeApiCall
-    writeIORef dbIORef $ mergeNewResponses plaidResps db
+    let eNewDb = mergeNewResponses plaidResps db
+    either (\s -> putStrLn $ "mergeNewResponse failed: " ++ s) (writeIORef dbIORef) eNewDb
     backupAndSerializeDB dbIORef

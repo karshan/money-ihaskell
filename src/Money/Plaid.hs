@@ -85,7 +85,7 @@ data PlaidAccount =
         acc_id           :: Text
       , _item            :: Text
       , _user            :: Text
-      , balance          :: PlaidBalance
+      , plBalance        :: PlaidBalance
       , institution_type :: Text
       , acc_meta         :: PlaidAccountMeta
       , subtype          :: Text
@@ -132,8 +132,8 @@ data PlaidTransaction =
         _account            :: Text
       , _pendingTransaction :: Maybe Text
       , txn_id              :: Text
-      , amount              :: Double
-      , date                :: Text
+      , plAmount            :: Double
+      , plDate              :: Text
       , txn_name            :: Text
       , txn_meta            :: PlaidTransactionMeta
       , pending             :: Bool

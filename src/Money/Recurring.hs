@@ -24,22 +24,24 @@ fuzzyMatch a b = fromIntegral countEqual/normalizer
         listApp f xs = f (head xs) (last xs)
         count e xs = length $ filter (==e) xs
 
-numMatch :: Double -> Double -> Double
-numMatch a b = 1 - (abs (a - b)/max (abs a) (abs b))
+gdiv :: Real a => a -> a -> Double
+gdiv a b = let f = fromRational . toRational in f a/f b
+
+numMatch :: Int -> Int -> Double
+numMatch a b = 1 - (abs (a - b) `gdiv` max (abs a) (abs b))
 
 nameMatch :: Txn -> Txn -> Double
-nameMatch t1 t2 = (fuzzyMatch `on` (txn_name . plaidTxn)) t1 t2
+nameMatch t1 t2 = (fuzzyMatch `on` desc) t1 t2
 
 amountMatch :: Txn -> Txn -> Double
-amountMatch t1 t2 = (numMatch `on` (amount . plaidTxn)) t1 t2
+amountMatch t1 t2 = (numMatch `on` amount) t1 t2
 
 dateMatch :: Txn -> Txn -> Double
 dateMatch t1 t2 =
-    let dd = abs (diffDays (date' t1) (date' t2))
-        dayOfMonth = (\(_, _, x) -> x) . toGregorian . date'
-        numMatchI a b = numMatch (fromIntegral a) (fromIntegral b)
-    in maximum $ [(numMatchI `on` dayOfMonth) t1 t2, numMatchI (dayOfMonth t1 + 30) (dayOfMonth t2), numMatchI (dayOfMonth t1) (dayOfMonth t2 + 30)] ++
-        (map (\x -> numMatchI (dd `mod` x) x) [14, 7])
+    let dd = fromIntegral $ abs (diffDays (date t1) (date t2))
+        dayOfMonth = (\(_, _, x) -> x) . toGregorian . date
+    in maximum $ [(numMatch `on` dayOfMonth) t1 t2, numMatch (dayOfMonth t1 + 30) (dayOfMonth t2), numMatch (dayOfMonth t1) (dayOfMonth t2 + 30)] ++
+        (map (\x -> numMatch (dd `mod` x) x) [14, 7])
 
 recurringScore :: [Txn] -> Txn -> Double
 recurringScore ts t1 =

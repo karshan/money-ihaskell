@@ -14,6 +14,7 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Money
+                     , Money.Balance
                      , Money.Prediction
                      , Money.Lens
                      , Money.FilterSort
@@ -24,22 +25,24 @@ library
                      , Money.Recurring
                      , Util
   build-depends:       base >= 4.7 && < 5
-                     , servant-client
-                     , servant
-                     , safecopy
-                     , regex-posix
-                     , http-api-data
-                     , time
-                     , directory
-                     , containers
+                     , aeson
                      , blaze-html
+                     , bytestring
                      , case-insensitive
                      , cereal
-                     , aeson
-                     , bytestring
-                     , text
+                     , containers
+                     , directory
+                     , http-api-data
                      , http-client
                      , http-client-tls
+                     , lens
+                     , protolude
+                     , regex-posix
+                     , safecopy
+                     , servant
+                     , servant-client
+                     , text
+                     , time
                      , unix
   default-language:    Haskell2010
 

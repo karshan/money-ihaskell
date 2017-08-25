@@ -17,28 +17,28 @@ import           Money.DB.Types
 parseTime :: String -> String -> Maybe Day
 parseTime f = fmap utctDay . parseTimeM True defaultTimeLocale f
 
+date_v1 :: Txn_v1 -> Maybe Day
+date_v1 = parseTime "%Y-%m-%d" . T.unpack . plDate . plaidTxn_v1
+
 -- pseudo lens
 txns :: DB -> [Txn]
 txns = map snd . Map.toList . txnDB
 
-accs :: DB -> [PlaidAccount]
+accs :: DB -> [Account]
 accs = map snd . Map.toList . accDB
 
-date' :: Txn -> Day
-date' = fromMaybe (error "parseTime failed") . parseTime "%Y-%m-%d" . T.unpack . date . plaidTxn
+amount' :: Txn -> Double
+amount' = (/100) . fromIntegral . amount
 
 -- psuedoLenses
-acc :: AccId -> DB -> PlaidAccount
-acc accId = fromMaybe (error "invalid accId") . Map.lookup accId . accDB
+acc :: AccId -> DB -> Maybe Account
+acc accId = Map.lookup accId . accDB
 
-accNumber :: AccId -> DB -> Text
-accNumber accId = number . acc_meta . acc accId 
+accNumber' :: AccId -> DB -> Maybe Text
+accNumber' accId db = accNumber <$> acc accId db
 
-accBalance :: AccId -> DB -> Double
-accBalance accId = current . balance . acc accId
+accBalance :: AccId -> DB -> Maybe Balance
+accBalance accId db = balance <$> acc accId db
 
-accName :: AccId -> DB -> Text
-accName accId = (\x -> accMeta_name x <> " " <> number x) . acc_meta . acc accId
-
-txnId :: Txn -> TxnId
-txnId = txn_id . plaidTxn
+accName' :: AccId -> DB -> Maybe Text
+accName' accId db = (\x -> accName x <> " " <> accNumber x) <$> acc accId db

@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards   #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 module Money.Prediction where
 
 import           Data.Text (Text)
@@ -12,15 +13,8 @@ import           Money.FilterSort
 import           Money.Lens
 import           Money.Plaid
 
-import           Util (head')
-
-{-
-justForScope = do
-    db <- readIORef dbIORef
-    let fml = fromMaybe undefined
-    let d0 = fml $ parseTime "%Y-%m-%d" "2017-04-07"
-    return $ take 10 $ map (formatTime defaultTimeLocale "%Y-%m-%d" . (`addDays` d0)) $ iterate (+ 7) 0
--}
+import           Protolude
+import           Prelude (String)
 
 type DayOfMonth = Int
 type Year = Integer
@@ -64,7 +58,7 @@ calculateCCBill CCInfo{..} (year, month) db =
                                        ^& (expenses ^| refunds)
     in
         PredictedTxn 
-            (sum $ map (amount . plaidTxn) $ filter ff (txns db))
+            (sum $ map amount' $ filter ff (txns db))
             (T.pack paymentTransactionName)
             (fromGregorian year month billDueDay)
             accountNumber
@@ -75,7 +69,7 @@ predictedCCBills db =
         (\ccInfo@CCInfo{..} ->
             let
                 mLastPaymentDate =
-                    fmap date' $ head' $ sortDesc $
+                    fmap date $ head $ sortDesc $
                         filter (fAccount db accountNumber ^& fDesc paymentTransactionName) $ txns db
             in
                 maybe

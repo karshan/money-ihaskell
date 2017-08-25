@@ -32,30 +32,33 @@ type FilterFunc = Txn -> Bool
 type SortFunc = [Txn] -> [Txn]
 
 fAccount :: DB -> Text -> FilterFunc
-fAccount db givenAcc = (givenAcc ==) . flip accNumber db . _account . plaidTxn
+fAccount db givenAcc = (Just givenAcc ==) . flip accNumber' db . accountId
 
 fAmount :: (Double -> Bool) -> FilterFunc
-fAmount f = f . amount . plaidTxn
+fAmount f = f . (/100) . fromIntegral . amount
 
 fDate :: (Day -> Bool) -> FilterFunc
-fDate f = f . date'
+fDate f = f . date
 
 fDate' :: ((Integer, Int, Int) -> Bool) -> FilterFunc
-fDate' f = f . toGregorian . date'
+fDate' f = f . toGregorian . date
 
 fMonth :: Integer -> Int -> FilterFunc
 fMonth year month = fDate' (\(y, m, _) -> y == year && m == month)
 
 fDesc :: String -> FilterFunc
-fDesc reg = match (makeRegexOpts (defaultCompOpt .|. compIgnoreCase) defaultExecOpt reg) . T.unpack . txn_name . plaidTxn
+fDesc reg = match (makeRegexOpts (defaultCompOpt .|. compIgnoreCase) defaultExecOpt reg) . T.unpack . desc
 
 fTag :: Tag -> FilterFunc
 fTag tag = Set.member tag . tags
 
 sortDesc :: [Txn] -> [Txn]
-sortDesc = sortBy (\a b -> (flip compare `on` date') a b <> (flip compare `on` txnId) a b)
+sortDesc = sortBy (\a b -> (flip compare `on` date) a b <> (flip compare `on` txnId) a b)
+
+sortDesc_v1 :: [Txn_v1] -> [Txn_v1]
+sortDesc_v1 = sortBy (\a b -> (flip compare `on` date_v1) a b <> (flip compare `on` (txn_id . plaidTxn_v1)) a b)
 
 sortAsc :: [Txn] -> [Txn]
-sortAsc = sortBy (\a b -> (compare `on` date') a b <> (compare `on` txnId) a b)
+sortAsc = sortBy (\a b -> (compare `on` date) a b <> (compare `on` txnId) a b)
 
 
