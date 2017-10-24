@@ -37,6 +37,8 @@ resolver: lts-9.9
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
+- location: https://github.com/karshan/protolude/archive/5c83a823a4c4e176cd6524f44edef454da1718dd.zip
+  extra-dep: true
 extra-deps: []
 
 # Override default flag values for local packages and extra-deps

@@ -5,7 +5,7 @@ module Util where
 import           Crypto.Hash (Digest, SHA256, hash)
 import qualified Data.ByteArray as BA
 
-import           Protolude hiding (maybeToEither)
+import           Protolude hiding (hash, maybeToEither)
 
 maybeToEither :: e -> Maybe a -> Either e a
 maybeToEither _ (Just a) = Right a
