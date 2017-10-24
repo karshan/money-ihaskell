@@ -40,6 +40,13 @@ data Creds =
       , accessTokens     :: [Text]
     } deriving (Eq, Show)
 
+instance FromJSON Creds where
+  parseJSON (Object v) =
+      Creds <$>
+          v .: "clientId"     <*>
+          v .: "clientSecret" <*>
+          v .: "accessTokens"
+
 data PlaidRequestBody =
     PlaidRequestBody {
         req_clientId     :: Text

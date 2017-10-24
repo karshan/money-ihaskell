@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-6.2
+resolver: lts-9.9
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -37,14 +37,7 @@ resolver: lts-6.2
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location: https://github.com/LumiGuide/servant/archive/5f070634cc293e35c7baf5e36f15c902ad7cb20a.zip
-  extra-dep: true                                                               
-  subdirs:                                                                      
-  - servant-client                                                              
-  - servant         
-# Dependency packages to be pulled from upstream that are not in the resolver
-# (e.g., acme-missiles-0.3)
-extra-deps: [ http-api-data-0.3.2 ]
+extra-deps: []
 
 # Override default flag values for local packages and extra-deps
 flags: {}
