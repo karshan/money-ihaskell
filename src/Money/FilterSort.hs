@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 module Money.FilterSort
     where
 
@@ -11,8 +12,12 @@ import           Text.Regex.Posix (compIgnoreCase, defaultCompOpt, defaultExecOp
 import           Data.Time (Day)
 import           Data.Time.Calendar (toGregorian)
 
-import           Money.Lens
-import           Money.DB.Types
+import           MoneySyncService.Types
+import qualified Lenses as L
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Control.Lens
+import Protolude
 
 -- anding, and oring filter functions
 fAnd, (^&) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
@@ -29,29 +34,29 @@ fOr f1 f2 x = f1 x || f2 x
 type FilterFunc = Txn -> Bool
 type SortFunc = (Txn -> Txn -> Ordering)
 
-fAccount :: DB -> Text -> FilterFunc
-fAccount db givenAcc = (Just givenAcc ==) . flip accNumber' db . accountId
+fAccount :: Map AccountId Account -> Text -> FilterFunc
+fAccount db givenAcc = (Just givenAcc ==) . fmap (view L.number) . flip Map.lookup db . view L.accountId
 
 fAmount :: (Double -> Bool) -> FilterFunc
-fAmount f = f . (/100) . fromIntegral . amount
+fAmount f = f . (/100) . fromIntegral . view L.amount
 
 fDate :: (Day -> Bool) -> FilterFunc
-fDate f = f . date
+fDate f = f . view L.date
 
 fDate' :: ((Integer, Int, Int) -> Bool) -> FilterFunc
-fDate' f = f . toGregorian . date
+fDate' f = f . toGregorian . view L.date
 
 fMonth :: Integer -> Int -> FilterFunc
 fMonth year month = fDate' (\(y, m, _) -> y == year && m == month)
 
-fDesc :: String -> FilterFunc
-fDesc reg = match (makeRegexOpts (defaultCompOpt .|. compIgnoreCase) defaultExecOpt reg) . T.unpack . desc
+fDesc :: [Char] -> FilterFunc
+fDesc reg = match (makeRegexOpts (defaultCompOpt .|. compIgnoreCase) defaultExecOpt reg) . T.unpack . view L.name
 
 fTag :: Tag -> FilterFunc
-fTag tag = Set.member tag . tags
+fTag tag = Set.member tag . view L.tags
 
 sortDesc :: SortFunc
-sortDesc = (\a b -> (flip compare `on` date) a b <> (flip compare `on` txnId) a b)
+sortDesc = (\a b -> (flip compare `on` (view L.date)) a b <> (flip compare `on` (view L.id)) a b)
 
 sortAsc :: SortFunc
-sortAsc = (\a b -> (compare `on` date) a b <> (compare `on` txnId) a b)
+sortAsc = (\a b -> (compare `on` (view L.date)) a b <> (compare `on` (view L.id)) a b)

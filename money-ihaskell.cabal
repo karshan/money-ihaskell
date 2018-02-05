@@ -13,17 +13,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Money
-                     , Money.Balance
-                     , Money.Prediction
-                     , Money.Lens
+  exposed-modules:     Money.Prediction
                      , Money.FilterSort
-                     , Money.DB
-                     , Money.DB.Types
                      , Money.IHaskell
-                     , Money.Plaid
                      , Money.Recurring
-                     , Util
+                     , MoneySyncService.Client
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , base64-bytestring
@@ -38,6 +32,7 @@ library
                      , http-client
                      , http-client-tls
                      , lens
+                     , money-sync-service
                      , memory
                      , protolude
                      , regex-posix
@@ -47,5 +42,5 @@ library
                      , text
                      , time
                      , unix
-  ghc-options:         -Wall
+  ghc-options:         -Wunused-imports -Wname-shadowing
   default-language:    Haskell2010

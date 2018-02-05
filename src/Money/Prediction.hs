@@ -4,20 +4,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 module Money.Prediction where
 
-import qualified Data.ByteString.Base64.URL as B64Url
 import qualified Data.Map as Map
-import qualified Data.Set as Set
-import qualified Data.Text as T
 import           Data.Time.Calendar (addGregorianMonthsClip, toGregorian, fromGregorian)
 
-import           Money.DB.Types
+import           MoneySyncService.Types
 import           Money.FilterSort
-import           Money.Lens
-
-import           Util (sha256)
+import qualified Lenses as L
 
 import           Protolude
 import           Prelude (String)
+import Control.Lens
 
 type DayOfMonth = Int
 type Year = Integer
@@ -28,13 +24,10 @@ data CCInfo =
         cycleStartDay :: DayOfMonth
       , cycleEndDay :: DayOfMonth
       , billDueDay :: DayOfMonth
-      , ccAccId :: AccId
-      , payFromAccId :: AccId
+      , ccAccId :: AccountId
+      , payFromAccId :: AccountId
       , paymentTransactionName :: String
     } deriving (Show)
-
-mkTxnId :: Txn -> Txn
-mkTxnId x = x { txnId = (T.take 37 (toS (B64Url.encode (sha256 (show x :: String))))) <> "-p" }
 
 {-
     The credit card bill that is due in April will include expense transactions
@@ -43,8 +36,8 @@ mkTxnId x = x { txnId = (T.take 37 (toS (B64Url.encode (sha256 (show x :: String
     immediately. Furthermore, we don't want to include past credit card bill
     payments in the calculation of the bill.
 -}
-calculateCCBill :: CCInfo -> (Year, Month) -> DB -> [Txn]
-calculateCCBill CCInfo{..} (year, month) db =
+calculateCCBill :: CCInfo -> (Year, Month) -> Map AccountId Account -> Map TxnId Txn -> [Txn]
+calculateCCBill CCInfo{..} (year, month) accMap txnMap =
     let subtractMonths m = addGregorianMonthsClip (-m)
 
         billStart   = subtractMonths 2 $ fromGregorian year month cycleStartDay
@@ -53,53 +46,43 @@ calculateCCBill CCInfo{..} (year, month) db =
 
         expenses = fDate ((>= billStart) ^& (<= billEnd)) ^& fAmount (> 0)
         refunds  = fDate ((>= subtractMonths 1 billDue) ^& (< billDue)) ^& fAmount (< 0)
-        ff = ((== ccAccId) . accountId) ^& (not . fDesc paymentTransactionName) 
+        ff = ((== ccAccId) . view L.accountId) ^& (not . fDesc paymentTransactionName) 
                                        ^& (expenses ^| refunds)
     in
-        map mkTxnId
-            [ Txn 
-                (toS paymentTransactionName)
-                (fromGregorian year month billDueDay)
-                Nothing
-                (negate $ sum $ map amount $ filter ff (txns db))
-                Set.empty
-                Nothing
-                ccAccId
-                ""
-                Nothing
-            , Txn
-                (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap accNumber (Map.lookup ccAccId (accDB db))))
-                (fromGregorian year month billDueDay)
-                Nothing
-                (sum $ map amount $ filter ff (txns db))
-                Set.empty
-                Nothing
-                payFromAccId
-                ""
-                Nothing
+        map identity -- mkTxnId
+            [ emptyTxn & 
+                L.name .~ (toS paymentTransactionName) &
+                L.date .~ (fromGregorian year month billDueDay) &
+                L.amount .~ (negate $ sum $ map (view L.amount) $ filter ff (Map.elems txnMap)) &
+                L.accountId .~ ccAccId
+            , emptyTxn &
+                L.name .~ (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap (view L.number) (Map.lookup ccAccId accMap))) &
+                L.date .~ (fromGregorian year month billDueDay) &
+                L.amount .~ (sum $ map (view L.amount) $ filter ff (Map.elems txnMap)) &
+                L.accountId .~ payFromAccId
             ]
 
 
-predictedCCBills :: DB -> [CCInfo] -> [Txn]
-predictedCCBills db =
+predictedCCBills :: Map AccountId Account -> Map TxnId Txn -> [CCInfo] -> [Txn]
+predictedCCBills accMap txnMap =
     concatMap
         (\ccInfo@CCInfo{..} ->
             let
                 mLastPaymentDate =
-                    fmap date $ head $ sortBy sortDesc $
-                        filter (((== ccAccId) . accountId) ^& fDesc paymentTransactionName) $ txns db
+                    fmap (view L.date) $ head $ sortBy sortDesc $
+                        filter (((== ccAccId) . view L.accountId) ^& fDesc paymentTransactionName) $ (Map.elems txnMap)
             in
                 maybe
                     []
                     (\lastPaymentDate ->
                         if billDueDay <= ((\(_, _, d) -> d) $ toGregorian lastPaymentDate) then -- already payed bill this month
                             concat 
-                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
-                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) db
+                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) accMap txnMap
+                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 2 lastPaymentDate) accMap txnMap
                                 ]
                         else
                             concat
-                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian lastPaymentDate) db
-                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) db
+                                [ calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian lastPaymentDate) accMap txnMap
+                                , calculateCCBill ccInfo ((\(y, m, _) -> (y, m)) $ toGregorian $ addGregorianMonthsClip 1 lastPaymentDate) accMap txnMap
                                 ])
                     mLastPaymentDate)

@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-9.9
+resolver: lts-10.3
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -39,7 +39,17 @@ packages:
 - '.'
 - location: https://github.com/karshan/protolude/archive/5c83a823a4c4e176cd6524f44edef454da1718dd.zip
   extra-dep: true
-extra-deps: []
+- location: https://github.com/karshan/money-sync-service/archive/9352423f7691aee118a8e07ceb15b282af443b1e.zip
+  extra-dep: true
+- location: https://github.com/brendanhay/gogol/archive/896ef3472ce09116f13d0cda3b8134b28e833a19.zip
+  extra-dep: true
+  subdirs:
+    - gogol
+    - gogol-gmail
+- location: https://github.com/karshan/gsuite-admin-sendmail/archive/fc195669a3153fae575872d40038ad45f13070de.zip
+  extra-dep: true
+extra-deps:
+- acid-state-0.14.3
 
 # Override default flag values for local packages and extra-deps
 flags: {}

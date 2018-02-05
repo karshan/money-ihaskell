@@ -7,7 +7,9 @@ import Data.List (tails)
 import Data.Function (on)
 import Data.Time.Calendar (diffDays, toGregorian)
 
-import Money.DB.Types
+import MoneySyncService.Types
+import qualified Lenses as L
+import Control.Lens
 
 -- Recurring transaction detection
 fuzzyMatch :: Text -> Text -> Double
@@ -29,15 +31,15 @@ numMatch :: Int -> Int -> Double
 numMatch a b = 1 - (abs (a - b) `gdiv` max (abs a) (abs b))
 
 nameMatch :: Txn -> Txn -> Double
-nameMatch t1 t2 = (fuzzyMatch `on` desc) t1 t2
+nameMatch t1 t2 = (fuzzyMatch `on` (view L.name)) t1 t2
 
 amountMatch :: Txn -> Txn -> Double
-amountMatch t1 t2 = (numMatch `on` amount) t1 t2
+amountMatch t1 t2 = (numMatch `on` (view L.amount)) t1 t2
 
 dateMatch :: Txn -> Txn -> Double
 dateMatch t1 t2 =
-    let dd = fromIntegral $ abs (diffDays (date t1) (date t2))
-        dayOfMonth = (\(_, _, x) -> x) . toGregorian . date
+    let dd = fromIntegral $ abs (diffDays (t1 ^. L.date) (t2 ^. L.date))
+        dayOfMonth = (\(_, _, x) -> x) . toGregorian . view L.date
     in maximum $ [(numMatch `on` dayOfMonth) t1 t2, numMatch (dayOfMonth t1 + 30) (dayOfMonth t2), numMatch (dayOfMonth t1) (dayOfMonth t2 + 30)] ++
         (map (\x -> numMatch (dd `mod` x) x) [14, 7])
 
@@ -49,5 +51,3 @@ recurringScore ts t1 =
         nmCut = 0.7
         amtCut = 0.9
         nameAmtMatches = filter (\t -> nameMatch t t1 > nmCut && amountMatch t t1 > amtCut && t /= t1) ts
-
-
