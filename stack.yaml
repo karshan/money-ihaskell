@@ -39,7 +39,7 @@ packages:
 - '.'
 - location: https://github.com/karshan/protolude/archive/5c83a823a4c4e176cd6524f44edef454da1718dd.zip
   extra-dep: true
-- location: https://github.com/karshan/money-sync-service/archive/9352423f7691aee118a8e07ceb15b282af443b1e.zip
+- location: https://github.com/karshan/money-sync-service/archive/a76726adfdb71d28ecedcb21689614e025db198c.zip
   extra-dep: true
 - location: https://github.com/brendanhay/gogol/archive/896ef3472ce09116f13d0cda3b8134b28e833a19.zip
   extra-dep: true

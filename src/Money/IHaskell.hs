@@ -21,6 +21,7 @@ import Money.FilterSort (FilterFunc, SortFunc)
 import Data.Map (Map)
 import Control.Lens
 import Protolude
+import Money.Balance
 
 show2decimal :: Double -> String
 show2decimal x = showFFloat (Just 2) x ""
@@ -28,7 +29,7 @@ show2decimal x = showFFloat (Just 2) x ""
 -- rendering to html
 renderTs :: Int -> Map AccountId Account -> Map TxnId Txn -> FilterFunc -> SortFunc -> Html
 renderTs maxN accMap txnMap ff sf =
-    let balanceMap = Map.empty
+    let balanceMap = calculateTxnBalances accMap txnMap
         ts = sortBy sf $ filter ff $ Map.elems txnMap
     in
         H.div ! A.id "container" ! A.style "font-family: \"Inconsolata\", monospace;" $ do
@@ -49,7 +50,7 @@ ellipsis n s = if length s > n then take (n - 3) s ++ "..." else s
 renderT :: Map AccountId Account -> Txn -> Maybe Int -> Html
 renderT accMap t mBal =
     H.tr $ do
-        H.td (toHtml $ T.drop 31 (t ^. L.id))
+        H.td (toHtml $ t ^. L.id)
         H.td (toHtml $ str $ show (t ^. L.date))
         if T.length (t ^. L.name) > 100 then
             H.td ! A.title (fromString $ T.unpack (t ^. L.name)) $

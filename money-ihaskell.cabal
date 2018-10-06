@@ -15,6 +15,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Money.Prediction
                      , Money.FilterSort
+                     , Money.Balance
                      , Money.IHaskell
                      , Money.Recurring
                      , MoneySyncService.Client
