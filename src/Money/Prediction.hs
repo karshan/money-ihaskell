@@ -58,7 +58,7 @@ calculateCCBill CCInfo{..} (year, month) accMap txnMap =
         , emptyTxn &
             L.name .~ (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap (view L.number) (Map.lookup ccAccId accMap))) &
             L.date .~ (fromGregorian year month billDueDay) &
-            L.amount .~ amt &
+            L.amount .~ (negate amt) &
             L.accountId .~ payFromAccId
         ]
 
