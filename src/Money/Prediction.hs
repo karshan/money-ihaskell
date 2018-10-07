@@ -48,19 +48,19 @@ calculateCCBill CCInfo{..} (year, month) accMap txnMap =
         refunds  = fDate ((>= subtractMonths 1 billDue) ^& (< billDue)) ^& fAmount (< 0)
         ff = ((== ccAccId) . view L.accountId) ^& (not . fDesc paymentTransactionName) 
                                        ^& (expenses ^| refunds)
+        amt = sum $ map (view L.amount) $ filter ff (Map.elems txnMap)
     in
-        map identity -- mkTxnId
-            [ emptyTxn & 
-                L.name .~ (toS paymentTransactionName) &
-                L.date .~ (fromGregorian year month billDueDay) &
-                L.amount .~ (negate $ sum $ map (view L.amount) $ filter ff (Map.elems txnMap)) &
-                L.accountId .~ ccAccId
-            , emptyTxn &
-                L.name .~ (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap (view L.number) (Map.lookup ccAccId accMap))) &
-                L.date .~ (fromGregorian year month billDueDay) &
-                L.amount .~ (sum $ map (view L.amount) $ filter ff (Map.elems txnMap)) &
-                L.accountId .~ payFromAccId
-            ]
+        [ emptyTxn &
+            L.name .~ (toS paymentTransactionName) &
+            L.date .~ (fromGregorian year month billDueDay) &
+            L.amount .~ (negate amt) &
+            L.accountId .~ ccAccId
+        , emptyTxn &
+            L.name .~ (toS paymentTransactionName <> maybe "" (\x -> " " <> x) (fmap (view L.number) (Map.lookup ccAccId accMap))) &
+            L.date .~ (fromGregorian year month billDueDay) &
+            L.amount .~ amt &
+            L.accountId .~ payFromAccId
+        ]
 
 
 predictedCCBills :: Map AccountId Account -> Map TxnId Txn -> [CCInfo] -> [Txn]

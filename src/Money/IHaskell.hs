@@ -21,16 +21,14 @@ import Money.FilterSort (FilterFunc, SortFunc)
 import Data.Map (Map)
 import Control.Lens
 import Protolude
-import Money.Balance
 
 show2decimal :: Double -> String
 show2decimal x = showFFloat (Just 2) x ""
 
 -- rendering to html
-renderTs :: Int -> Map AccountId Account -> Map TxnId Txn -> FilterFunc -> SortFunc -> Html
-renderTs maxN accMap txnMap ff sf =
-    let balanceMap = calculateTxnBalances accMap txnMap
-        ts = sortBy sf $ filter ff $ Map.elems txnMap
+renderTs :: Int -> Map AccountId Account -> Map TxnId Txn -> Map TxnId Int -> FilterFunc -> SortFunc -> Html
+renderTs maxN accMap txnMap balanceMap ff sf =
+    let ts = sortBy sf $ filter ff $ Map.elems txnMap
     in
         H.div ! A.id "container" ! A.style "font-family: \"Inconsolata\", monospace;" $ do
             H.div $ toHtml (show (length ts) ++ " transactions " ++ show2decimal (sum $ map ((/100) . fromIntegral . view L.amount) ts))
@@ -50,6 +48,12 @@ ellipsis n s = if length s > n then take (n - 3) s ++ "..." else s
 renderT :: Map AccountId Account -> Txn -> Maybe Int -> Html
 renderT accMap t mBal =
     H.tr $ do
+        let mAcc = Map.lookup (t ^. L.accountId) accMap
+            lowBalStyle = "background-color: #ff5050;color: white;"
+            isDebitLowBalance = fromMaybe False $ do
+                acc <- mAcc
+                bal <- mBal
+                return $ acc ^. L._type == Debit && bal < 400000
         H.td (toHtml $ t ^. L.id)
         H.td (toHtml $ str $ show (t ^. L.date))
         if T.length (t ^. L.name) > 100 then
@@ -59,7 +63,7 @@ renderT accMap t mBal =
             H.td (toHtml (t ^. L.name))
         H.td (toHtml $ show2decimal $ (/100) . fromIntegral $ t ^. L.amount)
         H.td (toHtml $ str $ show . Set.toList $ t ^. L.tags)
-        H.td (toHtml $ fromMaybe "_" $ fmap (show2decimal . (\x -> (fromIntegral x/100 :: Double))) mBal)
+        H.td ! A.style (if isDebitLowBalance then lowBalStyle else "") $ (toHtml $ fromMaybe "_" $ fmap (show2decimal . (\x -> (fromIntegral x/100 :: Double))) mBal)
         H.td (toHtml $ fromMaybe "_" $ view L.number <$> Map.lookup (t ^. L.accountId) accMap)
     where
         str :: String -> String
