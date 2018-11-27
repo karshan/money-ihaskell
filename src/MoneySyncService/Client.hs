@@ -11,13 +11,14 @@ import Protolude
 
 dbGet :: ClientM GetDBResponse
 institutionCreate :: CreateInstitution -> ClientM ()
+updateTags :: UpdateTags -> ClientM ()
 errorlogGet :: ClientM [Text]
 errorlogClear :: ClientM ()
-dbGet :<|> institutionCreate :<|> errorlogGet :<|> errorlogClear = client (Proxy :: Proxy API)
+dbGet :<|> institutionCreate :<|> updateTags :<|> errorlogGet :<|> errorlogClear = client (Proxy :: Proxy API)
 
 run :: MonadIO m => ClientM resp -> m (Either ServantError resp)
 run rpc = liftIO $ do
     mgr <- newManager (tlsManagerSettings { managerResponseTimeout = responseTimeoutMicro (120 * 10^6) })
     runClientM rpc
         (ClientEnv mgr
-            (BaseUrl Http "localhost" 8001 ""))
+            (BaseUrl Http "localhost" 10002 ""))
